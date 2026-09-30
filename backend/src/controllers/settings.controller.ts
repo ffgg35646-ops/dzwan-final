@@ -36,7 +36,7 @@ export async function getSettings(
           authentication: "JWT",
           loginRateLimit: true,
           loginMaxFailedAttempts,
-          helmet: true,
+          securityHeaders: true,
           malformedJsonProtection: true,
           json404Protection: true,
         },
