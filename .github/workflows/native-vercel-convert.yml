@@ -1,0 +1,123 @@
+name: build-native-vercel-copy
+
+on:
+  push:
+    branches:
+      - vercel-native-clean-2026-09-30
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Convert backend to native HTTP
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f backend/src/http/express-compat.ts
+          mv backend/src/http/express-compat.ts backend/src/http/native-http.ts
+
+          grep -rl --include='*.ts' --include='*.mts' --include='*.cts' 'http/express-compat' backend/src             | xargs -r sed -i 's#http/express-compat#http/native-http#g'
+
+          sed -i 's/const express=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware});/const createApp=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware});/' backend/src/http/native-http.ts
+          sed -i 's/export {express};export default express;/export {createApp};export default createApp;/' backend/src/http/native-http.ts
+
+          sed -i 's/import express, { type Request, type Response, type NextFunction } from "\.\/http\/native-http\.js";/import createApp, { type Request, type Response, type NextFunction } from ".\/http\/native-http.js";/' backend/src/server.ts
+          sed -i 's/const app = express();/const app = createApp();/' backend/src/server.ts
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("backend/src/server.ts")
+          s = p.read_text()
+          old = "startServer().catch((error) => {\n  console.error(\n    \"Failed to start DZWAN API:\",\n    error,\n  );\n  process.exit(1);\n});"
+          new = "if (process.env.VERCEL !== \"1\") {\n  startServer().catch((error) => {\n    console.error(\n      \"Failed to start DZWAN API:\",\n      error,\n    );\n    process.exit(1);\n  });\n}"
+          if old not in s:
+              raise SystemExit("server startup block not found")
+          p.write_text(s.replace(old, new))
+          PY
+
+          mkdir -p backend/api
+          cat > backend/api/index.ts <<'EOF'
+          import type { IncomingMessage, ServerResponse } from "node:http";
+          import app from "../dist/server.js";
+
+          export default async function handler(
+            req: IncomingMessage,
+            res: ServerResponse,
+          ): Promise<void> {
+            await app.handle(req, res);
+          }
+          EOF
+
+          cat > 'backend/api/[...path].ts' <<'EOF'
+          import type { IncomingMessage, ServerResponse } from "node:http";
+          import app from "../dist/server.js";
+
+          export default async function handler(
+            req: IncomingMessage,
+            res: ServerResponse,
+          ): Promise<void> {
+            await app.handle(req, res);
+          }
+          EOF
+
+          cat > backend/vercel.json <<'EOF'
+          {
+            "$schema": "https://openapi.vercel.sh/vercel.json",
+            "installCommand": "npm install",
+            "buildCommand": "npm run build"
+          }
+          EOF
+
+          rm -f backend/Dockerfile.vercel
+
+          find backend/src -type f \( \
+            -name '*.before-*.ts' -o \
+            -name '*.bak*.ts' -o \
+            -name '*.backup*.ts' -o \
+            -name '*.orig*.ts' -o \
+            -name '*-backup-*.ts' \
+          \) -print -delete
+
+          cd backend
+          npm uninstall express express-rate-limit cookie-parser cors helmet multer \
+            @types/express @types/multer @types/cookie-parser @types/cors >/dev/null 2>&1 || true
+          npm install
+
+          grep -RniE '\bexpress\b|express-compat|express-rate-limit|cookie-parser|helmet|multer' . \
+            --exclude-dir=node_modules --exclude='package-lock.json' && {
+              echo "Forbidden Express-related reference remains."
+              exit 1
+            } || true
+
+          npm run build
+
+      - name: Commit native Vercel copy
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git rm -f .github/workflows/native-vercel-convert.yml 2>/dev/null || true
+          git add -A
+          git commit -m "feat: full native Vercel backend conversion" || exit 0
+          git push
