@@ -53,7 +53,7 @@ jobs:
               s = s.replace("express-compat", "native-http")
               s = s.replace('from "express"', f'from "{rel}"')
               s = s.replace("from 'express'", f"from '{rel}'")
-              s = re.sub(r"\\bexpress\\b", "nativeHttp", s)
+              s = re.sub(r"\bexpress\b", "nativeHttp", s)
 
               p.write_text(s)
 
