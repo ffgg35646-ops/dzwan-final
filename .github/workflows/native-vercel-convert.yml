@@ -101,6 +101,18 @@ jobs:
           from pathlib import Path
           p = Path("backend/src/server.ts")
           s = p.read_text()
+          s = s.replace(
+              'import express, { type Request, type Response, type NextFunction } from "./http/native-http.js";',
+              'import createApp, { type Request, type Response, type NextFunction } from "./http/native-http.js";'
+          )
+          s = s.replace('const app = express();', 'const app = createApp();')
+          p.write_text(s)
+          PY
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("backend/src/server.ts")
+          s = p.read_text()
           old = """startServer().catch((error) => {
             console.error(
               "Failed to start DZWAN API:",
