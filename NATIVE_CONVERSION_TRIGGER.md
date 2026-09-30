@@ -1,1 +1,1 @@
-Native Vercel conversion final trigger.
+Native Vercel conversion parser/static fix trigger.
