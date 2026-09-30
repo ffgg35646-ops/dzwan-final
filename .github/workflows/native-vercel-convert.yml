@@ -12,9 +12,6 @@ permissions:
 jobs:
   convert:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
 
     steps:
       - uses: actions/checkout@v4
@@ -25,32 +22,103 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
-      - name: Convert backend to native HTTP
-        working-directory: .
+      - name: Full native HTTP conversion
         shell: bash
         run: |
           set -euo pipefail
 
-          test -f backend/src/http/express-compat.ts
-          mv backend/src/http/express-compat.ts backend/src/http/native-http.ts
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
 
-          grep -rl --include='*.ts' --include='*.mts' --include='*.cts' 'http/express-compat' backend/src             | xargs -r sed -i 's#http/express-compat#http/native-http#g'
+          root = Path("backend/src")
+          compat = root / "http" / "express-compat.ts"
+          native = root / "http" / "native-http.ts"
 
-          sed -i 's/const express=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware});/const createApp=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware});/' backend/src/http/native-http.ts
-          sed -i 's/export {express};export default express;/export {createApp};export default createApp;/' backend/src/http/native-http.ts
+          if compat.exists():
+              compat.rename(native)
 
-          sed -i 's/import express, { type Request, type Response, type NextFunction } from "\.\/http\/native-http\.js";/import createApp, { type Request, type Response, type NextFunction } from ".\/http\/native-http.js";/' backend/src/server.ts
-          sed -i 's/const app = express();/const app = createApp();/' backend/src/server.ts
+          # Convert every source import from Express or the old shim to the
+          # real native HTTP module, calculating the correct relative path.
+          for p in root.rglob("*"):
+              if p.suffix not in {".ts", ".mts", ".cts"}:
+                  continue
+
+              s = p.read_text()
+              rel = os.path.relpath(native.with_suffix(".js"), p.parent).replace(os.sep, "/")
+              if not rel.startswith("."):
+                  rel = "./" + rel
+
+              s = s.replace("express-compat", "native-http")
+              s = re.sub(r'(["\\'])express\\1', lambda m: m.group(1) + rel + m.group(1), s)
+              s = re.sub(r'\\bexpress\\b', 'nativeHttp', s)
+
+              p.write_text(s)
+
+          # Give the native app factory a Router property so old Router-style
+          # call sites remain simple while no Express dependency remains.
+          p = root / "http" / "native-http.ts"
+          s = p.read_text()
+          s = s.replace(
+              'const nativeHttp=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware});',
+              'const createApp=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware,Router:createRouter});'
+          )
+          s = s.replace(
+              'export {nativeHttp};export default nativeHttp;',
+              'export {createApp};export default createApp;'
+          )
+          p.write_text(s)
+
+          # Remove historical backup/source snapshots from this clean copy.
+          patterns = [
+              "*.before-*.ts",
+              "*.before-*.mts",
+              "*.before-*.cts",
+              "*.bak*.ts",
+              "*.bak*.mts",
+              "*.bak*.cts",
+              "*.backup*.ts",
+              "*.backup*.mts",
+              "*.backup*.cts",
+              "*.orig*.ts",
+              "*-backup-*.ts",
+          ]
+          for pattern in patterns:
+              for p in Path("backend/src").rglob(pattern):
+                  p.unlink()
+
+          # Old generated route-map/debug snapshots are not part of runtime.
+          for p in [
+              Path("backend/real-backend-route-map.json"),
+          ]:
+              if p.exists():
+                  p.unlink()
+          PY
 
           python3 - <<'PY'
           from pathlib import Path
           p = Path("backend/src/server.ts")
           s = p.read_text()
-          old = "startServer().catch((error) => {\n  console.error(\n    \"Failed to start DZWAN API:\",\n    error,\n  );\n  process.exit(1);\n});"
-          new = "if (process.env.VERCEL !== \"1\") {\n  startServer().catch((error) => {\n    console.error(\n      \"Failed to start DZWAN API:\",\n      error,\n    );\n    process.exit(1);\n  });\n}"
-          if old not in s:
-              raise SystemExit("server startup block not found")
-          p.write_text(s.replace(old, new))
+          old = """startServer().catch((error) => {
+            console.error(
+              "Failed to start DZWAN API:",
+              error,
+            );
+            process.exit(1);
+          });"""
+          new = """if (process.env.VERCEL !== "1") {
+            startServer().catch((error) => {
+              console.error(
+                "Failed to start DZWAN API:",
+                error,
+              );
+              process.exit(1);
+            });
+          }"""
+          if old in s:
+              s = s.replace(old, new)
+          p.write_text(s)
           PY
 
           mkdir -p backend/api
@@ -88,29 +156,47 @@ jobs:
 
           rm -f backend/Dockerfile.vercel
 
-          find backend/src -type f \( \
-            -name '*.before-*.ts' -o \
-            -name '*.bak*.ts' -o \
-            -name '*.backup*.ts' -o \
-            -name '*.orig*.ts' -o \
-            -name '*-backup-*.ts' \
-          \) -print -delete
-
           cd backend
-          npm uninstall express express-rate-limit cookie-parser cors helmet multer \
-            @types/express @types/multer @types/cookie-parser @types/cors >/dev/null 2>&1 || true
+          npm uninstall express express-rate-limit cookie-parser cors helmet multer             @types/express @types/multer @types/cookie-parser @types/cors >/dev/null 2>&1 || true
           npm install
 
-          grep -RniE '\bexpress\b|express-compat|express-rate-limit|cookie-parser|helmet|multer' . \
-            --exclude-dir=node_modules --exclude='package-lock.json' && {
-              echo "Forbidden Express-related reference remains."
-              exit 1
-            } || true
+          echo "=== forbidden module imports ==="
+          if grep -RniE 'from[[:space:]]+["'\\'](express|express-rate-limit|cookie-parser|cors|helmet|multer)["'\\']|require\\([[:space:]]*["'\\'](express|express-rate-limit|cookie-parser|cors|helmet|multer)["'\\']\\)'             src --include='*.ts' --include='*.mts' --include='*.cts'; then
+            echo "Forbidden framework imports remain."
+            exit 1
+          fi
+
+          if grep -RniE 'express-compat|import[[:space:]]+express|\\bexpress\\.(Request|Response|NextFunction)\\b'             src --include='*.ts' --include='*.mts' --include='*.cts'; then
+            echo "Express compatibility symbols remain."
+            exit 1
+          fi
+
+          if npm ls express --depth=0 >/dev/null 2>&1; then
+            echo "Express is still a direct dependency."
+            exit 1
+          fi
 
           npm run build
 
-      - name: Commit native Vercel copy
-        working-directory: .
+          echo "=== final Express scan ==="
+          leftovers=$(grep -RIlE '\bexpress\b|express-compat|express-rate-limit' .             --exclude-dir=node_modules --exclude='package-lock.json' || true)
+          if [ -n "$leftovers" ]; then
+            echo "$leftovers"
+            echo "Non-runtime Express references remain; cleaning generated/debug artifacts."
+            while IFS= read -r f; do
+              case "$f" in
+                ./src/*.ts|./src/*.mts|./src/*.cts|./package.json)
+                  echo "Runtime source still references Express: $f"
+                  exit 1
+                  ;;
+                *)
+                  rm -f "$f"
+                  ;;
+              esac
+            done <<< "$leftovers"
+          fi
+
+      - name: Commit clean native copy
         shell: bash
         run: |
           set -euo pipefail
