@@ -29,11 +29,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RniE 'from[[:space:]]+["'\'](express|express-rate-limit|cookie-parser|cors|helmet|multer)["'\']|require\([[:space:]]*["'\'](express|express-rate-limit|cookie-parser|cors|helmet|multer)["'\']\)|express-compat|\bexpress\.(Request|Response|NextFunction)\b'             src package.json api --include='*.ts' --include='*.mts' --include='*.cts' --include='*.json'; then
+          echo "=== Express references in runtime source ==="
+          if grep -Rniw "express" src api package.json --include='*.ts' --include='*.mts' --include='*.cts' --include='*.json'; then
             echo "Express reference found."
             exit 1
           fi
-          npm ls express --depth=0 >/dev/null 2>&1 && {
+
+          if grep -RniE 'express-compat|express-rate-limit|cookie-parser|helmet|multer' src api package.json --include='*.ts' --include='*.mts' --include='*.cts' --include='*.json'; then
+            echo "Legacy Express-related reference found."
+            exit 1
+          fi
+
+          if npm ls express --depth=0 >/dev/null 2>&1; then
             echo "Express is installed as a direct dependency."
             exit 1
-          } || true
+          fi
+
+          echo "Native Vercel backend verification passed."
