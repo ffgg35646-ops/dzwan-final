@@ -1,1 +1,1 @@
-Native Vercel conversion parser/static fix trigger.
+Native Vercel conversion final regex trigger.
