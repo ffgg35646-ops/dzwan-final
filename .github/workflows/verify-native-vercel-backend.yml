@@ -1,0 +1,39 @@
+name: verify-native-vercel-backend
+
+on:
+  push:
+    branches:
+      - vercel-native-clean-2026-09-30
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+      - run: npx tsc --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck api/internal/cron.ts
+      - name: Verify no Express dependency or source import
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RniE 'from[[:space:]]+["'\'](express|express-rate-limit|cookie-parser|cors|helmet|multer)["'\']|require\([[:space:]]*["'\'](express|express-rate-limit|cookie-parser|cors|helmet|multer)["'\']\)|express-compat|\bexpress\.(Request|Response|NextFunction)\b'             src package.json api --include='*.ts' --include='*.mts' --include='*.cts' --include='*.json'; then
+            echo "Express reference found."
+            exit 1
+          fi
+          npm ls express --depth=0 >/dev/null 2>&1 && {
+            echo "Express is installed as a direct dependency."
+            exit 1
+          } || true
