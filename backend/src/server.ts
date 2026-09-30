@@ -135,7 +135,7 @@ app.use(
   supportTicketRoutes,
 );
 
-app.post(
+app.get(
   "/api/internal/cron",
   async (req, res) => {
     const authorization = String(req.get("authorization") ?? "");
