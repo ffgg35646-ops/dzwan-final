@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "./",
+      "entrypoint": "Dockerfile.vercel"
+    }
+  },
   "crons": [
     {
       "path": "/api/internal/cron",
