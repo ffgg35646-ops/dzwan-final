@@ -21,12 +21,10 @@ export default async function handler(
   try {
     await connectDatabase();
 
-    const [assignments, queue, attendance, stuck] = await Promise.all([
-      expireAssignments(),
-      processDispatchQueue(),
-      autoCloseExpiredCaptainAttendance(),
-      detectStuckOrders(),
-    ]);
+    const assignments = await expireAssignments();
+    const queue = await processDispatchQueue();
+    const attendance = await autoCloseExpiredCaptainAttendance();
+    const stuck = await detectStuckOrders();
 
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
