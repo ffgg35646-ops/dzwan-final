@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response } from "../http/native-http.js";
 import { Types } from "mongoose";
 import { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import CaptainAttendanceModel from "../models/CaptainAttendance.js";

@@ -180,5 +180,5 @@ function staticMiddleware(root:string):Handler{return async(req,res,next)=>{
   }catch{next();}
 };}
 export const Router = createRouter;
-const express=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware});
-export {express};export default express;
+const createApp=Object.assign(createRouter,{json:jsonParser,static:staticMiddleware,Router:createRouter});
+export {createApp};export default createApp;

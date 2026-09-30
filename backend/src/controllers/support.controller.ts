@@ -1,4 +1,4 @@
-import { Request, Response } from "../http/express-compat.js";
+import { Request, Response } from "../http/native-http.js";
 import SupportSettings from "../models/SupportSettings.js";
 
 function cleanList(value: unknown): string[] {

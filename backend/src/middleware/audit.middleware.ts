@@ -3,7 +3,7 @@ import type {
   NextFunction,
   Request,
   Response
-} from "../http/express-compat.js";
+} from "../http/native-http.js";
 import { writeAuditLog } from "../services/audit.service.js";
 
 export function auditAction(

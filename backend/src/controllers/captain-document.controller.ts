@@ -1,5 +1,5 @@
 import { createAuditLog } from "../services/audit-log.service.js";
-import { Response } from "express";
+import { Response } from "../http/native-http.js";
 import { Types } from "mongoose";
 import { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { CaptainDocumentModel } from "../models/CaptainDocument.js";

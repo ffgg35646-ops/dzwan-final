@@ -1,5 +1,5 @@
 
-import type { Response } from "../http/express-compat.js";
+import type { Response } from "../http/native-http.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { NotificationModel } from "../models/Notification.js";
 import { Types } from "mongoose";

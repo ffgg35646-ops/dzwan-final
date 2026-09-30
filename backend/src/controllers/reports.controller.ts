@@ -1,4 +1,4 @@
-import type { Request, Response } from "../http/express-compat.js";
+import type { Request, Response } from "../http/native-http.js";
 import { UserModel } from "../models/User.js";
 import { OrderModel } from "../models/Order.js";
 import { EstablishmentModel } from "../models/Establishment.js";

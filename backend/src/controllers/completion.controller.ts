@@ -1,7 +1,7 @@
 import { EstablishmentModel } from "../models/Establishment.js";
 import { OrderModel } from "../models/Order.js";
 import CaptainRatingFinalModel from "../models/CaptainRatingFinal.js";
-import type { Request, Response } from "express";
+import type { Request, Response } from "../http/native-http.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { Types } from "mongoose";
 import { z } from "zod";

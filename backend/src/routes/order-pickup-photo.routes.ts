@@ -1,4 +1,4 @@
-import { Router } from "../http/express-compat.js";
+import { Router } from "../http/native-http.js";
 import { multipartUpload } from "../http/native-upload.middleware.js";
 import {
   requireAuth,

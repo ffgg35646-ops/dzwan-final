@@ -2,7 +2,7 @@ import { Busboy } from "@fastify/busboy";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import type { Handler } from "./express-compat.js";
+import type { Handler } from "./native-http.js";
 
 type FileInfo = {
   fieldname: string;

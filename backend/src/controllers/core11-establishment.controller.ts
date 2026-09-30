@@ -1,7 +1,7 @@
 import type {
   Request,
   Response,
-} from "express";
+} from "../http/native-http.js";
 import mongoose from "mongoose";
 
 function actor(req: Request) {

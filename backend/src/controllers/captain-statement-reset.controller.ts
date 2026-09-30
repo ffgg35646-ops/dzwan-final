@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response } from "../http/native-http.js";
 import { Types } from "mongoose";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { resetCaptainStatement } from "../services/captain-statement-reset.service.js";

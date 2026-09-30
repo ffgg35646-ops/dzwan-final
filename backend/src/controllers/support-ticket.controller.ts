@@ -1,5 +1,5 @@
 
-import { Request, Response } from "../http/express-compat.js";
+import { Request, Response } from "../http/native-http.js";
 import { Types } from "mongoose";
 import { SupportTicketModel } from "../models/SupportTicket.js";
 

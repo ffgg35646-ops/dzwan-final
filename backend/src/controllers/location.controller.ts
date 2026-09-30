@@ -1,4 +1,4 @@
-import type { Response } from "express";
+import type { Response } from "../http/native-http.js";
 import { z } from "zod";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { LocationModel } from "../models/Location.js";

@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response } from "../http/native-http.js";
 import { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import {
   getSystemSettings,

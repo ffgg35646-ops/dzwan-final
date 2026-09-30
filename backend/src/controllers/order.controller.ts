@@ -11,7 +11,7 @@ import {
   recordOrderCashToEstablishment,
   recordOrderCashCollectedFromCustomer,
 } from "../services/order-cash.service.js";
-import type { Response } from "express";
+import type { Response } from "../http/native-http.js";
 import { randomUUID } from "node:crypto";
 import { Types } from "mongoose";
 import { z } from "zod";

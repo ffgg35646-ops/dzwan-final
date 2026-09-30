@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import type { Response } from "../http/express-compat.js";
+import type { Response } from "../http/native-http.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import {

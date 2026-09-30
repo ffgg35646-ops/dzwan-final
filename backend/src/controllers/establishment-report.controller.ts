@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, Response } from "../http/native-http.js";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { EstablishmentModel } from "../models/Establishment.js";

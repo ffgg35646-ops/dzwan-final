@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response } from "../http/native-http.js";
 import bcrypt from "bcryptjs";
 import { Types } from "mongoose";
 import CaptainRegistrationModel from "../models/CaptainRegistration.js";

@@ -1,5 +1,5 @@
 
-import { Router } from "../http/express-compat.js";
+import { Router } from "../http/native-http.js";
 import { requireAuth, requireAdmin, requireSuperAdmin } from "../middleware/auth.middleware.js";
 import {
   createComplaint,

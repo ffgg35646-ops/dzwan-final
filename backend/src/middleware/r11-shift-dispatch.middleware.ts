@@ -1,5 +1,5 @@
 
-import { Response, NextFunction } from "express";
+import { Response, NextFunction } from "../http/native-http.js";
 import type { AuthenticatedRequest } from "./auth.middleware.js";
 import {
   assertCaptainInsideShift,

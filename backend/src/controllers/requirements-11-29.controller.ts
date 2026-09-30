@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, Response } from "../http/native-http.js";
 import { Types } from "mongoose";
 import { LocationModel } from "../models/Location.js";
 import { DispatchSettingsModel } from "../models/DispatchSettings.js";

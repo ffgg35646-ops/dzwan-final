@@ -1,4 +1,4 @@
-import { Router } from "../http/express-compat.js";
+import { Router } from "../http/native-http.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import {
   shiftCheck,

@@ -1,5 +1,5 @@
 import mongoose, { Types } from "mongoose";
-import type { Response } from "express";
+import type { Response } from "../http/native-http.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { OrderModel } from "../models/Order.js";
 import Core11OrderStateModel from "../models/Core11OrderState.js";
