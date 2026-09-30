@@ -24,7 +24,7 @@ jobs:
 
       - run: npm ci
       - run: npm run build
-      - run: npx tsc --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck api/internal/cron.ts
+      - run: npx tsc --noEmit --ignoreConfig --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck api/internal/cron.ts
       - name: Verify no Express dependency or source import
         shell: bash
         run: |
