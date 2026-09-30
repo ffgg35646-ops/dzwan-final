@@ -1,0 +1,39 @@
+name: verify-native-vercel-container
+
+on:
+  push:
+    branches:
+      - vercel-native-clean-2026-09-30
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install and build backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build Vercel container
+        run: docker build -f backend/Dockerfile.vercel backend
+
+      - name: Verify native runtime files
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f Dockerfile.vercel
+          test ! -f ../vercel.json
+          grep -Rniw "express" src package.json --include='*.ts' --include='*.json' && exit 1 || true
+          grep -RniE 'express-compat|express-rate-limit|cookie-parser|helmet|multer' src package.json --include='*.ts' --include='*.json' && exit 1 || true
+          npm ls express --depth=0 >/dev/null 2>&1 && exit 1 || true
