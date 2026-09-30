@@ -1,1 +1,1 @@
-Native Vercel conversion retry trigger.
+Native Vercel conversion final trigger.
