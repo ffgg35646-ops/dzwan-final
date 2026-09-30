@@ -16,7 +16,7 @@ import core11SettingsRoutes from "./routes/core11-settings.routes.js";
 import pricingRoutes from "./routes/pricing.routes.js";
 import ops3147Routes from "./routes/ops-31-47.routes.js";
 import geofenceRoutes from "./routes/geofence.routes.js";
-import nativeHttp, { type Request, type Response, type NextFunction } from "./http/native-http.js";
+import createApp, { type Request, type Response, type NextFunction } from "./http/native-http.js";
 import path from "node:path";
 import orderPickupPhotoRoutes from "./routes/order-pickup-photo.routes.js";
 import { connectDatabase } from "./config/database.js";
@@ -66,7 +66,7 @@ import requirements1129Router from "./routes/requirements-11-29.routes.js";
 
 import AppThemeRoutes from "./routes/app-theme.routes.js";
 
-const app = nativeHttp();
+const app = createApp();
 
 app.disable("x-powered-by");
 
@@ -111,11 +111,11 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.use(nativeHttp.json({ limit: "1mb" }));
+app.use(createApp.json({ limit: "1mb" }));
 
 app.use(
   "/uploads",
-  nativeHttp.static(
+  createApp.static(
     path.join(process.cwd(), "uploads"),
   ),
 );
