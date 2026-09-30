@@ -135,6 +135,45 @@ app.use(
   supportTicketRoutes,
 );
 
+app.post(
+  "/api/internal/cron",
+  async (req, res) => {
+    const authorization = String(req.get("authorization") ?? "");
+    const expected = process.env.CRON_SECRET;
+
+    if (!expected || authorization !== `Bearer ${expected}`) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    try {
+      const assignments = await expireAssignments();
+      const queue = await processDispatchQueue();
+      const attendance = await autoCloseExpiredCaptainAttendance();
+      const stuck = await detectStuckOrders();
+
+      res.json({
+        success: true,
+        jobs: {
+          assignments,
+          queue,
+          attendance,
+          stuck,
+        },
+      });
+    } catch (error) {
+      console.error("Vercel cron error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Cron execution failed.",
+      });
+    }
+  },
+);
+
 app.get("/api/health", async (_req, res) => {
   try {
     await ensureDatabaseConnection();
@@ -858,12 +897,10 @@ async function startServer(): Promise<void> {
   });
 }
 
-if (process.env.VERCEL !== "1") {
-  startServer().catch((error) => {
-    console.error(
-      "Failed to start DZWAN API:",
-      error,
-    );
-    process.exit(1);
-  });
-}
+startServer().catch((error) => {
+  console.error(
+    "Failed to start DZWAN API:",
+    error,
+  );
+  process.exit(1);
+});
