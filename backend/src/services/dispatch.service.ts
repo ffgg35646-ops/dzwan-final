@@ -7,7 +7,6 @@ import { DispatchSettingsModel } from "../models/DispatchSettings.js";
 import { CaptainWorkAreaModel } from "../models/CaptainWorkArea.js";
 import { LocationModel } from "../models/Location.js";
 import { CaptainLocationModel } from "../models/CaptainLocation.js";
-import CaptainAttendanceModel from "../models/CaptainAttendance.js";
 import { rankDispatchCandidates } from "./smart-dispatch-score.service.js";
 
 interface DispatchCandidate {
@@ -151,32 +150,6 @@ async function captainHasActiveShift(
     String(shift.startTime),
     String(shift.endTime),
   );
-}
-
-async function captainHasTodayAttendance(
-  captainId: Types.ObjectId,
-): Promise<boolean> {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-
-  const attendance =
-    await CaptainAttendanceModel.findOne({
-      captainId,
-      date: {
-        $gte: start,
-        $lt: end,
-      },
-      clockInAt: {
-        $ne: null,
-      },
-    })
-      .select("_id")
-      .lean();
-
-  return Boolean(attendance);
 }
 
 export async function findBestCaptain(
@@ -429,14 +402,6 @@ export async function findBestCaptain(
         continue;
       }
 
-      const hasTodayAttendance =
-        await captainHasTodayAttendance(
-          captain._id,
-        );
-
-      if (!hasTodayAttendance) {
-        continue;
-      }
     }
 
     const captainLocation =
